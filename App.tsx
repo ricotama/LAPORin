@@ -1,6 +1,7 @@
 // App.tsx
 import React, { useEffect, useState } from "react";
-import { SafeAreaView, View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 import { ref, push, set, onValue, update, remove } from "firebase/database";
@@ -33,9 +34,9 @@ export default function App() {
     photoUrl: undefined,
   });
 
-  /* ===========================
-       LOAD DATA DARI FIREBASE
-     =========================== */
+  /* =====================================
+        LOAD DATA DARI FIREBASE
+     ===================================== */
   useEffect(() => {
     const reportsRef = ref(db, "reports");
 
@@ -55,7 +56,8 @@ export default function App() {
       }));
 
       list.sort(
-        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
 
       setReports(list);
@@ -76,9 +78,9 @@ export default function App() {
     });
   };
 
-  /* ===========================
-        SUBMIT LAPORAN
-     =========================== */
+  /* =====================================
+              SUBMIT LAPORAN
+     ===================================== */
   const handleSubmit = async () => {
     if (!formData.title.trim() || !formData.description.trim()) {
       Alert.alert("Validasi", "Judul dan Deskripsi wajib diisi.");
@@ -129,11 +131,11 @@ export default function App() {
     Alert.alert("Berhasil", "Laporan dihapus");
   };
 
-  /* ===========================
-            RENDER
-     =========================== */
+  /* =====================================
+                 RENDER
+     ===================================== */
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.safe}>
       {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>LAPORin</Text>
@@ -168,49 +170,96 @@ export default function App() {
           />
         )}
 
-        {menu === "map" && (
-          <MapScreen reports={reports} />
-        )}
+        {menu === "map" && <MapScreen reports={reports} />}
       </View>
 
-      {/* BOTTOM NAV */}
+      {/* NAVIGATION BAR */}
       <View style={styles.nav}>
-        {/* HOME */}
-        <TouchableOpacity style={styles.navItem} onPress={() => setMenu("home")}>
-          <Ionicons name="home" size={24} color={menu === "home" ? "#2563EB" : "gray"} />
-          <Text style={menu === "home" ? styles.navTextActive : styles.navText}>Home</Text>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => setMenu("home")}
+        >
+          <Ionicons
+            name="home"
+            size={24}
+            color={menu === "home" ? "#2563EB" : "gray"}
+          />
+          <Text style={menu === "home" ? styles.navTextActive : styles.navText}>
+            Home
+          </Text>
         </TouchableOpacity>
 
-        {/* LAPOR */}
-        <TouchableOpacity style={styles.navItem} onPress={() => setMenu("report")}>
-          <Ionicons name="add-circle" size={24} color={menu === "report" ? "#2563EB" : "gray"} />
-          <Text style={menu === "report" ? styles.navTextActive : styles.navText}>Lapor</Text>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => setMenu("report")}
+        >
+          <Ionicons
+            name="add-circle"
+            size={24}
+            color={menu === "report" ? "#2563EB" : "gray"}
+          />
+          <Text
+            style={menu === "report" ? styles.navTextActive : styles.navText}
+          >
+            Lapor
+          </Text>
         </TouchableOpacity>
 
-        {/* LIST */}
-        <TouchableOpacity style={styles.navItem} onPress={() => setMenu("list")}>
-          <Ionicons name="list" size={24} color={menu === "list" ? "#2563EB" : "gray"} />
-          <Text style={menu === "list" ? styles.navTextActive : styles.navText}>Daftar</Text>
+        <TouchableOpacity
+          style={styles.navItem}
+          onPress={() => setMenu("list")}
+        >
+          <Ionicons
+            name="list"
+            size={24}
+            color={menu === "list" ? "#2563EB" : "gray"}
+          />
+          <Text style={menu === "list" ? styles.navTextActive : styles.navText}>
+            Daftar
+          </Text>
         </TouchableOpacity>
 
-        {/* MAP */}
         <TouchableOpacity style={styles.navItem} onPress={() => setMenu("map")}>
-          <Ionicons name="map" size={24} color={menu === "map" ? "#2563EB" : "gray"} />
-          <Text style={menu === "map" ? styles.navTextActive : styles.navText}>Map</Text>
+          <Ionicons
+            name="map"
+            size={24}
+            color={menu === "map" ? "#2563EB" : "gray"}
+          />
+          <Text style={menu === "map" ? styles.navTextActive : styles.navText}>
+            Map
+          </Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 }
 
-/* ===========================
-         STYLES
-   =========================== */
+/* =====================================
+                STYLES
+   ===================================== */
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f4f4f5" },
-  header: { backgroundColor: "#2563EB", padding: 16 },
-  headerTitle: { color: "white", fontSize: 20, fontWeight: "700" },
-  headerSub: { color: "#cbd5e1", fontSize: 12 },
+  safe: {
+    flex: 1,
+    backgroundColor: "#f4f4f5", // warna netral seperti sebelumnya
+  },
+
+  header: {
+    paddingTop: 12, // ⭐ HEADER TURUN — padding tambahan
+    paddingBottom: 16,
+    paddingHorizontal: 16,
+    backgroundColor: "#2563EB",
+  },
+
+  headerTitle: {
+    color: "white",
+    fontSize: 22,
+    fontWeight: "700",
+  },
+
+  headerSub: {
+    color: "#dbeafe",
+    fontSize: 12,
+  },
 
   nav: {
     flexDirection: "row",
@@ -218,7 +267,21 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: "#ddd",
   },
-  navItem: { flex: 1, alignItems: "center", paddingVertical: 8 },
-  navText: { fontSize: 12, color: "gray" },
-  navTextActive: { fontSize: 12, color: "#2563EB", fontWeight: "600" },
+
+  navItem: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+
+  navText: {
+    fontSize: 12,
+    color: "gray",
+  },
+
+  navTextActive: {
+    fontSize: 12,
+    color: "#2563EB",
+    fontWeight: "600",
+  },
 });

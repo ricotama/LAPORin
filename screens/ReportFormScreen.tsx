@@ -1,121 +1,97 @@
-// screens/ReportFormScreen.tsx
 import React from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
+  StyleSheet,
   Image,
   ScrollView,
-  Alert,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
-import { FormDataType, Report, Category } from "../types/ReportTypes";
+import MapView, { Marker } from "react-native-maps";
+import { Ionicons } from "@expo/vector-icons";
+import { FormDataType } from "../types/ReportTypes";
 
 interface Props {
   formData: FormDataType;
-  setFormData: React.Dispatch<React.SetStateAction<FormDataType>>;
+  setFormData: (data: FormDataType) => void;
   onSubmit: () => void;
-  editing: Report | null;
+  editing: any;
   onCancelEdit: () => void;
 }
 
-const categories: Category[] = [
-  "jalan",
-  "jembatan",
-  "drainase",
-  "lampu",
-  "lainnya",
-];
-
-const ReportFormScreen: React.FC<Props> = ({
+export default function ReportFormScreen({
   formData,
   setFormData,
   onSubmit,
   editing,
   onCancelEdit,
-}) => {
-
-  // PILIH FOTO & SIMPAN BASE64
+}: Props) {
+  
+  /* PICK IMAGE BASE64 */
   const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Izin ditolak", "Aktifkan izin galeri.");
-      return;
-    }
-
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       base64: true,
-      quality: 0.6
+      quality: 0.7,
     });
 
     if (!result.canceled) {
-      const base64Img = "data:image/jpeg;base64," + result.assets[0].base64;
-
-      setFormData((prev) => ({
-        ...prev,
-        photoUrl: base64Img,
-      }));
+      setFormData({
+        ...formData,
+        photoUrl: "data:image/jpeg;base64," + result.assets[0].base64,
+      });
     }
   };
 
-  // AMBIL LOKASI GPS
+  /* GET GPS */
   const getLocation = async () => {
-    const perm = await Location.requestForegroundPermissionsAsync();
-    if (perm.status !== "granted") {
-      Alert.alert("Izin lokasi ditolak");
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      alert("Izin lokasi ditolak.");
       return;
     }
 
     const loc = await Location.getCurrentPositionAsync({});
-    setFormData((prev) => ({
-      ...prev,
+    setFormData({
+      ...formData,
       latitude: loc.coords.latitude,
       longitude: loc.coords.longitude,
-    }));
+    });
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>{editing ? "Edit Laporan" : "Buat Laporan"}</Text>
-
-        {editing && (
-          <TouchableOpacity onPress={onCancelEdit}>
-            <Ionicons name="close-circle" size={28} color="red" />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* JUDUL */}
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 50 }}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Judul */}
       <Text style={styles.label}>Judul</Text>
       <TextInput
         style={styles.input}
         placeholder="Contoh: Jalan berlubang"
         value={formData.title}
-        onChangeText={(t) => setFormData({ ...formData, title: t })}
+        onChangeText={(v) => setFormData({ ...formData, title: v })}
       />
 
-      {/* KATEGORI */}
+      {/* Kategori */}
       <Text style={styles.label}>Kategori</Text>
       <View style={styles.categoryRow}>
-        {categories.map((cat) => (
+        {["jalan", "jembatan", "drainase", "lampu", "lainnya"].map((cat) => (
           <TouchableOpacity
             key={cat}
-            style={[
-              styles.catChip,
-              formData.category === cat && styles.catChipActive,
-            ]}
             onPress={() => setFormData({ ...formData, category: cat })}
+            style={[
+              styles.categoryButton,
+              formData.category === cat && styles.categoryButtonActive,
+            ]}
           >
             <Text
               style={[
-                styles.catText,
-                formData.category === cat && styles.catTextActive,
+                styles.categoryText,
+                formData.category === cat && styles.categoryTextActive,
               ]}
             >
               {cat.toUpperCase()}
@@ -124,149 +100,238 @@ const ReportFormScreen: React.FC<Props> = ({
         ))}
       </View>
 
-      {/* DESKRIPSI */}
+      {/* Deskripsi */}
       <Text style={styles.label}>Deskripsi</Text>
       <TextInput
-        style={[styles.input, styles.textArea]}
-        value={formData.description}
-        onChangeText={(t) => setFormData({ ...formData, description: t })}
+        style={styles.textArea}
         multiline
         placeholder="Jelaskan kondisi kerusakan..."
+        value={formData.description}
+        onChangeText={(v) => setFormData({ ...formData, description: v })}
       />
 
-      {/* ALAMAT */}
+      {/* Alamat */}
       <Text style={styles.label}>Alamat</Text>
       <TextInput
         style={styles.input}
         placeholder="Alamat kejadian"
         value={formData.address}
-        onChangeText={(t) => setFormData({ ...formData, address: t })}
+        onChangeText={(v) => setFormData({ ...formData, address: v })}
       />
 
-      {/* FOTO */}
+      {/* Foto */}
       <Text style={styles.label}>Foto Kerusakan</Text>
-      <TouchableOpacity style={styles.photoBtn} onPress={pickImage}>
-        <Ionicons name="image-outline" size={20} color="#2563EB" />
-        <Text style={styles.photoBtnText}>Pilih Foto</Text>
+
+      <TouchableOpacity style={styles.photoBox} onPress={pickImage}>
+        <Ionicons name="image-outline" size={34} color="#2563EB" />
+        <Text style={styles.photoText}>Pilih Foto</Text>
       </TouchableOpacity>
 
       {formData.photoUrl ? (
-        <Image source={{ uri: formData.photoUrl }} style={styles.preview} />
+        <Image source={{ uri: formData.photoUrl }} style={styles.previewImage} />
       ) : (
-        <Text style={styles.noImage}>Belum ada foto</Text>
+        <Text style={styles.noPhoto}>Belum ada foto</Text>
       )}
 
       {/* GPS */}
-      <View style={styles.locHeader}>
+      <View style={styles.locationHeader}>
         <Text style={styles.label}>Lokasi GPS</Text>
-        <TouchableOpacity style={styles.locBtn} onPress={getLocation}>
-          <Ionicons name="locate-outline" size={16} color="#2563EB" />
-          <Text style={styles.locBtnText}>Ambil Lokasi</Text>
+
+        <TouchableOpacity onPress={getLocation} style={styles.locationButton}>
+          <Ionicons name="locate-outline" size={20} color="#2563EB" />
+          <Text style={styles.locText}>Ambil Lokasi</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.latLongRow}>
-        <View style={styles.inputGroup}>
-          <Text style={styles.smallLabel}>Latitude</Text>
+      {/* Peta kecil */}
+      <MapView
+        style={styles.mapSmall}
+        region={{
+          latitude: formData.latitude,
+          longitude: formData.longitude,
+          latitudeDelta: 0.005,
+          longitudeDelta: 0.005,
+        }}
+      >
+        <Marker
+          coordinate={{
+            latitude: formData.latitude,
+            longitude: formData.longitude,
+          }}
+        />
+      </MapView>
+
+      {/* Koordinat */}
+      <View style={styles.row}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.labelSmall}>Latitude</Text>
           <TextInput
             style={styles.input}
-            keyboardType="numeric"
             value={String(formData.latitude)}
-            onChangeText={(t) => setFormData({ ...formData, latitude: Number(t) })}
+            onChangeText={(v) =>
+              setFormData({ ...formData, latitude: parseFloat(v) })
+            }
           />
         </View>
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.smallLabel}>Longitude</Text>
+        <View style={{ width: 16 }} />
+
+        <View style={{ flex: 1 }}>
+          <Text style={styles.labelSmall}>Longitude</Text>
           <TextInput
             style={styles.input}
-            keyboardType="numeric"
             value={String(formData.longitude)}
-            onChangeText={(t) => setFormData({ ...formData, longitude: Number(t) })}
+            onChangeText={(v) =>
+              setFormData({ ...formData, longitude: parseFloat(v) })
+            }
           />
         </View>
       </View>
 
-      <TouchableOpacity style={styles.submitBtn} onPress={onSubmit}>
-        <Ionicons name="send-outline" size={18} color="white" />
+      {/* Submit */}
+      <TouchableOpacity style={styles.submitButton} onPress={onSubmit}>
+        <Ionicons name="send-outline" size={20} color="white" />
         <Text style={styles.submitText}>
           {editing ? "Update Laporan" : "Kirim Laporan"}
         </Text>
       </TouchableOpacity>
     </ScrollView>
   );
-};
+}
 
-export default ReportFormScreen;
-
-/* ====================== STYLES ========================= */
-
+/* ====================== STYLES ====================== */
 const styles = StyleSheet.create({
   container: { padding: 16 },
-  headerRow: {
+
+  label: {
+    fontSize: 15,
+    fontWeight: "600",
+    marginTop: 12,
+    marginBottom: 6,
+  },
+
+  input: {
+    backgroundColor: "#F3F4F6",
+    padding: 12,
+    borderRadius: 10,
+    fontSize: 14,
+  },
+
+  textArea: {
+    backgroundColor: "#F3F4F6",
+    padding: 12,
+    height: 110,
+    borderRadius: 10,
+    textAlignVertical: "top",
+    fontSize: 14,
+  },
+
+  categoryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+
+  categoryButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: "#E5E7EB",
+  },
+
+  categoryButtonActive: {
+    backgroundColor: "#2563EB",
+  },
+
+  categoryText: {
+    fontSize: 13,
+    color: "#374151",
+  },
+
+  categoryTextActive: {
+    color: "white",
+    fontWeight: "700",
+  },
+
+  photoBox: {
+    backgroundColor: "#DBEAFE",
+    padding: 18,
+    height: 75,
+    borderRadius: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+
+  photoText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2563EB",
+  },
+
+  previewImage: {
+    marginTop: 10,
+    height: 180,
+    borderRadius: 12,
+    width: "100%",
+  },
+
+  noPhoto: {
+    marginTop: 6,
+    color: "#6B7280",
+    fontSize: 12,
+  },
+
+  locationHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 12,
+    alignItems: "center",
+    marginTop: 16,
   },
-  title: { fontSize: 20, fontWeight: "700" },
-  label: { marginTop: 12, fontSize: 14, fontWeight: "600" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ddd",
-    backgroundColor: "white",
-    padding: 10,
-    borderRadius: 8,
-    marginTop: 4,
-  },
-  textArea: { height: 80, textAlignVertical: "top" },
-  categoryRow: { flexDirection: "row", flexWrap: "wrap" },
-  catChip: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 6,
-    marginTop: 6,
-  },
-  catChipActive: {
-    backgroundColor: "#2563EB",
-    borderColor: "#2563EB",
-  },
-  catText: { fontSize: 12 },
-  catTextActive: { color: "white", fontWeight: "700" },
-  photoBtn: {
+
+  locationButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#EFF6FF",
-    padding: 10,
-    borderRadius: 8,
-    width: 140,
-    marginTop: 4,
   },
-  photoBtnText: { marginLeft: 6, color: "#2563EB" },
-  preview: { width: "100%", height: 160, borderRadius: 10, marginTop: 8 },
-  noImage: { fontSize: 12, color: "gray", marginTop: 4 },
-  locHeader: { flexDirection: "row", justifyContent: "space-between", marginTop: 12 },
-  locBtn: {
+
+  locText: {
+    color: "#2563EB",
+    marginLeft: 4,
+    fontWeight: "600",
+  },
+
+  mapSmall: {
+    height: 150,
+    borderRadius: 12,
+    marginTop: 10,
+    width: "100%",
+  },
+
+  labelSmall: {
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: 12,
+    marginBottom: 4,
+  },
+
+  row: {
     flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#EFF6FF",
-    padding: 6,
-    borderRadius: 6,
   },
-  locBtnText: { marginLeft: 4, color: "#2563EB" },
-  latLongRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 12 },
-  inputGroup: { flex: 1, marginRight: 8 },
-  submitBtn: {
+
+  submitButton: {
     backgroundColor: "#2563EB",
-    padding: 14,
+    marginTop: 24,
+    paddingVertical: 14,
     borderRadius: 10,
     alignItems: "center",
-    marginTop: 20,
     flexDirection: "row",
     justifyContent: "center",
+    gap: 8,
   },
-  submitText: { color: "white", fontWeight: "700", marginLeft: 6 },
-  smallLabel: { fontSize: 12, color: "#555", marginBottom: 2 },
+
+  submitText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "700",
+  },
 });
