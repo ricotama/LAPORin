@@ -4,7 +4,6 @@
 **LAPORin** adalah aplikasi pelaporan kerusakan infrastruktur berbasis **React Native**, 
 dengan fitur **foto**, **GPS**, dan **Firebase Realtime Database**.
 
-## **🧩 Komponen Pembangun**
 ## 🧩 **Komponen Pembangun Produk**
 
 ### **1. React Native + Expo**
